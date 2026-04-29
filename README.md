@@ -50,7 +50,7 @@ OMDL solves these problems by providing a centralized platform that allows real-
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 **Frontend**
 - React (TypeScript)  
@@ -168,5 +168,5 @@ This system is evaluated based on **ISO/IEC 25010**, focusing on:
 
 ## 📄 License
 
-- This project was developed as a capstone requirement for the Bachelor of Science in Information Systems at the Technological University of the Philippines (TUP).
-- The source code and documentation are intended for academic and educational purposes only. Unauthorized commercial use, reproduction, or distribution without proper permission from the authors is strictly prohibited.
+This project was developed as a capstone requirement for the Bachelor of Science in Information Systems at the Technological University of the Philippines (TUP).
+The source code and documentation are intended for academic and educational purposes only. Unauthorized commercial use, reproduction, or distribution without proper permission from the authors is strictly prohibited.
