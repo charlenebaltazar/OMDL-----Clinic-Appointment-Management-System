@@ -105,10 +105,10 @@ http://localhost:3000
 - Authentication (Login/Register)
 - Appointment Dashboard (Patient)
 - View and Edit Account (Patient)
+- Admin Dashboard
 - Appointment Management  
 - Patient Records Management
-- Viw and Edit Account (Admin)
-- Admin Dashboard 
+- View and Edit Account (Admin)
 - Manage Service
 - Manage Doctors
 - Manage Admins
