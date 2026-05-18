@@ -100,6 +100,32 @@ Open in your browser
 http://localhost:3000
 ```
 
+---
+
+## Official Website
+
+Visit the official Olympus Medical and Diagnostic Laboratory website:
+
+https://www.olympmedlab.com
+
+---
+
+## Test Credentials
+
+You may use the following demo accounts to explore the system:
+
+### Admin Account
+
+**Email:** admin@gmail.com  
+**Password:** Admin#124
+
+### Patient Account
+
+**Email:** glennbaltazar32@gmail.com  
+**Password:** Charlene1013$
+
+---
+
 ##  System Modules
 
 - Authentication (Login/Register)
