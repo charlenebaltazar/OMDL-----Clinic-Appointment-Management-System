@@ -1,189 +1,319 @@
-import type { StylesConfig } from "react-select";
-import type { DoctorOptionType, Options } from "./table";
+import { ChevronsUpDown, Wand } from "lucide-react";
+import { type JSX } from "react";
+import { tableHeaders } from "./headers/archiveAppointments";
+import type {
+  IAppointment,
+  IService,
+  PopulatedDoctor,
+} from "../../../../@types/interface";
+import dayjs from "dayjs";
+import Pagination from "../pagination";
+import { serviceColors, statusColors } from "../data";
+import { BACKEND_DOMAIN } from "../../../../configs/config";
+import axios from "axios";
+import { Link } from "react-router-dom";
 
-export const customStyles = (
-  darkMode: boolean,
-): StylesConfig<Options, boolean> => ({
-  control: (provided) => ({
-    ...provided,
-    boxShadow: "none",
-    border: "none",
-    backgroundColor: "transparent",
-    cursor: "pointer",
-  }),
+export type Options = {
+  value: string;
+  label: string;
+};
 
-  menu: (provided) => ({
-    ...provided,
-    backgroundColor: darkMode ? "#09090b" : "white",
-    border: darkMode ? "1px solid #3f3f46" : "1px solid #e4e4e7",
-  }),
+export interface ITableHeaders {
+  name: string;
+  icon: JSX.Element;
+  filter: boolean;
+  singleValue: boolean;
+  options: Options[];
+  sortable: boolean;
+}
 
-  menuList: (provided) => ({
-    ...provided,
-    backgroundColor: darkMode ? "#09090b" : "white",
-    paddingTop: 4,
-    paddingBottom: 4,
-  }),
+function Table({
+  appointments,
+  currentPage,
+  setCurrentPage,
+  totalPages,
+  totalItems,
+  perPage,
+  setRefresh,
+  loading,
+}: {
+  appointments: IAppointment[];
+  currentPage: number;
+  setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
+  totalPages: number;
+  totalItems: number;
+  perPage: number;
+  setRefresh: React.Dispatch<React.SetStateAction<number>>;
+  loading: boolean;
+}) {
+  const handleAction = async (id: string, action: string) => {
+    try {
+      await axios.patch(
+        `${BACKEND_DOMAIN}/api/v1/appointments/${id}/${action}`,
+        {},
+        { withCredentials: true },
+      );
 
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isFocused
-      ? darkMode
-        ? "#27272a"
-        : "#f4f4f5"
-      : darkMode
-      ? "#09090b"
-      : "white",
-    color: darkMode ? "#fafafa" : "#18181b",
-    cursor: "pointer",
-  }),
+      setRefresh((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to mark appointment as no-show", error);
+    }
+  };
 
-  singleValue: (provided, state) => ({
-    ...provided,
-    color: state.hasValue ? "#3b82f6" : darkMode ? "#fafafa" : "#18181b",
-  }),
+  const handleArchive = async (id: string) => {
+    const confirmed = confirm(
+      "Are you sure you want to archive this appointment?",
+    );
 
-  multiValue: (provided) => ({
-    ...provided,
-    backgroundColor: darkMode ? "#27272a" : "#e4e4e7",
-  }),
+    if (!confirmed) return;
 
-  multiValueLabel: (provided, state) => ({
-    ...provided,
-    color:
-      state.getValue().length > 0
-        ? "#3b82f6"
-        : darkMode
-        ? "#fafafa"
-        : "#18181b",
-  }),
+    try {
+      await axios.patch(
+        `${BACKEND_DOMAIN}/api/v1/appointments/${id}/archive`,
+        { archive: true },
+        { withCredentials: true },
+      );
 
-  clearIndicator: (provided) => ({
-    ...provided,
-    color: "#3b82f6",
-    "&:hover": { color: "#2563eb" },
-  }),
+      setRefresh((prev) => prev + 1);
+    } catch (error) {
+      console.error("Failed to archive appointment", error);
+    }
+  };
 
-  dropdownIndicator: (provided, state) => {
-    const val = state.selectProps.value;
-    const hasValue = Array.isArray(val) ? val.length > 0 : !!val;
+  const onPageChange = (page: number) => setCurrentPage(page);
 
-    return {
-      ...provided,
-      color: hasValue ? "#3b82f6" : darkMode ? "#fafafa" : "#3f3f46",
-      transform: state.selectProps.menuIsOpen
-        ? "rotate(180deg)"
-        : "rotate(0deg)",
-      transition: "transform 0.2s ease, color 0.2s ease",
-    };
-  },
-});
+  // Helper function to get service name from service object or string
+  const getServiceName = (service: string | IService): string => {
+    return typeof service === "string" ? service : service.name;
+  };
 
-export const doctorSelectStyles = (
-  darkMode: boolean,
-): StylesConfig<DoctorOptionType, false> => ({
-  control: (provided, state) => {
-    const hasValue = !!state.selectProps.value;
+  // Helper function to normalize medical department to array
+  const normalizeMedicalDepartment = (
+    dept: string | IService | (string | IService)[],
+  ): (string | IService)[] => {
+    return Array.isArray(dept) ? dept : [dept];
+  };
 
-    return {
-      ...provided,
-      boxShadow: "none",
-      borderRadius: 8,
-      cursor: "pointer",
+  return (
+    <div className="rounded-xl border border-zinc-300 dark:border-zinc-700 mt-3 bg-system-white dark:bg-system-black flex flex-col max-h-[80vh] overflow-hidden">
+      <div className="overflow-x-auto w-full no-scrollbar">
+        <div className="w-full">
+          <div className="overflow-y-auto w-full">
+            <table className="table-auto border-collapse w-full">
+              <thead className="text-sm text-zinc-500 sticky top-0 bg-system-white dark:bg-system-black z-10">
+                <tr>
+                  {tableHeaders.map((header, i) => (
+                    <TableHeader key={i} header={header} />
+                  ))}
+                  <th className="w-36 px-5 py-2 border-b border-zinc-300 dark:border-zinc-700">
+                    <div className="flex items-center gap-2">
+                      <Wand className="w-4" /> Actions
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-sm text-zinc-600 dark:text-zinc-400">
+                {!loading &&
+                  appointments.length !== 0 &&
+                  appointments
+                    .filter((appt): appt is IAppointment => !!appt)
+                    .map((appt, i) => (
+                      <tr
+                        key={i}
+                        className={`border-b border-zinc-300 dark:border-zinc-700 transition-colors duration-150 ease-in-out hover:bg-zinc-200/50 dark:hover:bg-zinc-700/50
+                        `}
+                      >
+                        <td className="py-2 px-5 font-medium text-zinc-950 dark:text-zinc-50">
+                          <Link
+                            to={`/users/${appt.patientId._id}`}
+                            className="flex items-center gap-2"
+                          >
+                            <img
+                              src="/assets/images/user-profile.jpg"
+                              alt="profile"
+                              className="w-7 h-7 rounded-full"
+                            />
+                            <p className="cursor-pointer w-fit whitespace-nowrap">
+                              {appt.patientName}
+                            </p>
+                          </Link>
+                        </td>
+                        <td className="py-2 px-5">
+                          <span
+                            className={`px-2 py-0.5 rounded-sm text-white text-xs font-bold ${
+                              statusColors[appt.status] || "bg-gray-400"
+                            }`}
+                          >
+                            {appt.status === "Approved"
+                              ? "On Queue"
+                              : appt.status}
+                          </span>
+                        </td>
+                        <td className="py-2 px-5 whitespace-nowrap">
+                          {dayjs(appt.schedule).format("h:mm A")}
+                        </td>
+                        <td className="py-2 px-5 text-zinc-950 dark:text-zinc-50 font-medium">
+                          {Array.isArray(appt.doctorId) &&
+                          appt.doctorId.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {(appt.doctorId as PopulatedDoctor[]).map(
+                                (doc, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <img
+                                      src="/assets/images/profile-doctor.jpg"
+                                      alt="profile"
+                                      className="w-7 h-7 rounded-full"
+                                    />
+                                    <p className="w-fit whitespace-nowrap">
+                                      {doc.firstname}{" "}
+                                      {doc.middlename
+                                        ? `${doc.middlename[0]}.`
+                                        : ""}{" "}
+                                      {doc.surname}{" "}
+                                      {doc.suffix ? doc.suffix : ""}
+                                    </p>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          ) : (
+                            <p className="w-fit whitespace-nowrap text-zinc-400">
+                              No doctor assigned yet
+                            </p>
+                          )}
+                        </td>
+                        <td className="py-2 px-5 whitespace-nowrap">
+                          <div className="flex flex-col gap-2 items-start">
+                            {normalizeMedicalDepartment(
+                              appt.medicalDepartment,
+                            ).map((svc, idx) => {
+                              const serviceName = getServiceName(svc);
+                              return (
+                                <span
+                                  key={idx}
+                                  className={`px-3 py-1 rounded-full text-xs font-medium w-auto ${
+                                    serviceColors[serviceName] ||
+                                    "bg-gray-50 text-gray-700 border border-gray-200"
+                                  }`}
+                                >
+                                  {serviceName}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </td>
+                        <td className="px-5">
+                          {appt.status === "Pending" && (
+                            <div className="flex items-center gap-3 text-white font-bold text-xs">
+                              <button
+                                onClick={() =>
+                                  handleAction(appt._id, "approve")
+                                }
+                                className="bg-green-500 rounded-sm px-2 py-0.5 cursor-pointer"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleAction(appt._id, "decline")
+                                }
+                                className="bg-red-400 rounded-sm px-2 py-0.5 cursor-pointer"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
 
-      border: hasValue
-        ? `1px solid ${darkMode ? "#374151" : "#93c5fd"}`
-        : `1px solid ${darkMode ? "#3f3f46" : "#d4d4d8"}`,
+                          {appt.status === "Approved" && (
+                            <div className="flex items-center gap-3 text-white font-bold text-xs">
+                              <button
+                                onClick={() =>
+                                  handleAction(appt._id, "completed")
+                                }
+                                className="bg-green-500 rounded-sm px-2 py-0.5 cursor-pointer"
+                              >
+                                Completed
+                              </button>
+                              <button
+                                onClick={() => handleAction(appt._id, "noshow")}
+                                className="bg-red-400 rounded-sm px-2 py-0.5 cursor-pointer whitespace-nowrap"
+                              >
+                                No Show
+                              </button>
+                            </div>
+                          )}
 
-      backgroundColor: hasValue
-        ? darkMode
-          ? "#1e293b"
-          : "#dbeafe"
-        : darkMode
-        ? "#18181b"
-        : "#f4f4f5",
+                          {[
+                            "Cancelled",
+                            "No Show",
+                            "Completed",
+                            "Declined",
+                          ].includes(appt.status) && (
+                            <div className="flex items-center gap-3 text-white font-bold text-xs">
+                              <button
+                                onClick={() => handleArchive(appt._id)}
+                                className="bg-orange-400 rounded-sm px-2 py-0.5 cursor-pointer whitespace-nowrap"
+                              >
+                                Archive
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
-      "&:hover": {
-        borderColor: hasValue
-          ? darkMode
-            ? "#60a5fa"
-            : "#60a5fa"
-          : darkMode
-          ? "#52525b"
-          : "#d4d4d8",
-      },
-    };
-  },
+        {loading && (
+          <div className="w-full h-96 flex justify-center items-center text-zinc-400 dark:text-zinc-600">
+            Loading appointments. Please wait.
+          </div>
+        )}
 
-  singleValue: (provided, state) => {
-    const hasValue = !!state.selectProps.value;
+        {!loading && appointments.length === 0 && (
+          <div className="w-full h-96 flex justify-center items-center text-zinc-400 dark:text-zinc-600">
+            No appointments found.
+          </div>
+        )}
+      </div>
 
-    return {
-      ...provided,
-      color: hasValue
-        ? darkMode
-          ? "#93c5fd"
-          : "#3b82f6"
-        : darkMode
-        ? "#fafafa"
-        : "#18181b",
+      {/* Pagination stays visible */}
+      <Pagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        perPage={perPage}
+        onPageChange={onPageChange}
+      />
+    </div>
+  );
+}
 
-      fontWeight: hasValue ? 600 : 400,
-    };
-  },
+function TableHeader({ header }: { header: ITableHeaders }) {
+  return (
+    <th className="min-w-[120px] py-2 px-5 z-20 border-b border-zinc-300 dark:border-zinc-700">
+      <div
+        className={`flex items-center gap-2 w-fit ${
+          header.sortable && "cursor-pointer"
+        }`}
+      >
+        {header.icon}
+        <span className="truncate">{header.name}</span>
+        {header.sortable && <ChevronsUpDown className="w-3" />}
+      </div>
+    </th>
+  );
+}
 
-  dropdownIndicator: (provided, state) => {
-    const hasValue = !!state.selectProps.value;
+export interface DoctorOptionType {
+  value: string;
+  label: string;
+  image?: string;
+}
 
-    return {
-      ...provided,
-      color: hasValue
-        ? darkMode
-          ? "#93c5fd"
-          : "#3b82f6"
-        : darkMode
-        ? "#fafafa"
-        : "#3f3f46",
-
-      transform: state.selectProps.menuIsOpen
-        ? "rotate(180deg)"
-        : "rotate(0deg)",
-      transition: "0.2s ease",
-    };
-  },
-
-  indicatorSeparator: () => ({
-    display: "none",
-  }),
-
-  menu: (provided) => ({
-    ...provided,
-    backgroundColor: darkMode ? "#0f0f11" : "#ffffff",
-    border: darkMode ? "1px solid #3f3f46" : "1px solid #93c5fd",
-    borderRadius: 8,
-    marginTop: 4,
-    overflow: "hidden",
-  }),
-
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isFocused
-      ? darkMode
-        ? "#1f2937"
-        : "#dbeafe"
-      : darkMode
-      ? "#0f0f11"
-      : "white",
-
-    color: darkMode ? "#dbeafe" : "#1e3a8a",
-    cursor: "pointer",
-    paddingTop: 8,
-    paddingBottom: 8,
-  }),
-
-  menuList: (provided) => ({
-    ...provided,
-    paddingTop: 4,
-    paddingBottom: 4,
-  }),
-});
+export default Table;
