@@ -55,7 +55,7 @@ function CustomInput({
     if (name === "password") {
       if (!passwordRegex.test(value)) {
         setError(
-          "Password must be at least 8 characters long, and include a mix of uppercase letters, numbers, and symbols."
+          "Password must be at least 8 characters long, and include a mix of uppercase letters, numbers, and symbols.",
         );
       } else {
         setError("");
@@ -138,12 +138,14 @@ export default function Signup() {
             "Content-Type": "application/json",
           },
           withCredentials: true,
-        }
+        },
       );
 
       console.log("Signup success:", response.data);
 
-      navigate("/appointments");
+      navigate(`/users/${response.data.user.id}/appointments`, {
+        replace: true,
+      });
     } catch (e) {
       console.log(e);
       if (axios.isAxiosError(e)) {
@@ -413,9 +415,6 @@ export default function Signup() {
           />
 
           <div className="absolute inset-0 w-1/12 bg-linear-to-r from-system-white  via-transparent to-transparent pointer-events-none" />
-          <div className="absolute right-5 bottom-5 w-2/5 bg-primary/80 text-zinc-100 font-medium rounded-xl px-5 text-3xl py-3">
-            Sign up to create an appointment.
-          </div>
         </div>
       </section>
     </main>
