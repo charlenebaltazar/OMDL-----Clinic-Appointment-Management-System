@@ -2,15 +2,19 @@ import type { FiltersState } from "./types";
 
 export interface IAppointment {
   _id: string;
-  patientId: number;
+  patientId: IUser;
   doctorId: IDoctor;
   patientName: string;
-  medicalDepartment: string[];
-  medicalRecord: {
+  medicalDepartment: string | IService | (string | IService)[];
+  medicalRecords: {
     _id: string;
+    appointmentId: string;
     filename: string;
+    driveId: string;
+    originalName: string;
     fileUrl: string;
-  };
+    uploadedAt: Date;
+  }[];
   schedule: Date;
   email: string;
   phoneNumber: string;
@@ -76,7 +80,10 @@ export interface IMedicalRecord {
 
 export interface IDoctor {
   _id: string;
-  name: string;
+  firstname: string;
+  middlename: string;
+  surname: string;
+  suffix: string;
   specialization: string;
   schedule: Date;
   createdAt: Date;
@@ -90,9 +97,36 @@ export interface IService {
   createdAt: Date;
 }
 
+export interface ISchedule {
+  _id: string;
+  doctorId: IDoctor;
+  start: Date;
+  end: Date;
+  createdAt: Date;
+}
+
 export interface FilterProps {
   tabs: string[];
   currentTab: string;
   filters: FiltersState;
   setFilters: React.Dispatch<React.SetStateAction<FiltersState>>;
+}
+
+export interface CountEntry {
+  [key: string]: number;
+}
+
+export interface IAppointmentLineGraphResponse {
+  labels: string[];
+  completed: CountEntry[];
+  cancelledNoShow: CountEntry[];
+}
+
+export interface PopulatedDoctor {
+  suffix: string;
+  _id: string;
+  firstname: string;
+  middlename?: string;
+  surname: string;
+  specialization?: string;
 }
